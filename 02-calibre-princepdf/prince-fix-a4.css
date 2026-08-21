@@ -1,0 +1,41 @@
+/*
+ * prince-fix.css - Force A4, zero margins, content at 100%
+ * Used for fixed-layout EPUBs where PrincePDF fails to scale correctly.
+ */
+
+@page {
+  size: A4;
+  margin: 0 !important;
+}
+
+@page:first {
+  margin: 0 !important;
+  @top-left { content: normal; }
+  @top-center { content: normal; }
+  @top-right { content: normal; }
+  @bottom-left { content: normal; }
+  @bottom-center { content: normal; }
+  @bottom-right { content: normal; }
+}
+
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: #FFFFFF !important;
+}
+
+.PageContainer {
+  background: #FFFFFF !important;
+  width: 1106px !important;
+  height: 1502px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  position: relative !important;
+}
+
+img, div, p, span {
+  margin: 0 !important;
+  padding: 0 !important;
+}
