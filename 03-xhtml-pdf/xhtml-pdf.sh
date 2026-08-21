@@ -1,5 +1,5 @@
 #!/bin/bash
-# xhtml-to-pdf.sh - Convert fixed-layout EPUB to individual PDF pages
+# xhtml-to-pdf.sh - Convert fixed-layout EPUB to individual PDF pages using content.opf
 # Usage: ./xhtml-to-pdf.sh
 
 set -e
@@ -40,16 +40,13 @@ echo ""
 echo -e "${YELLOW}📁 Enter the output directory for PDF files:${NC}"
 read -r OUTPUT_DIR
 
-# If nothing is entered, use the current directory
 if [ -z "$OUTPUT_DIR" ]; then
   OUTPUT_DIR="$PWD"
   echo -e "${YELLOW}⚠️  No directory specified. Using current directory.${NC}"
 fi
 
-# Create the output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"
 
-# Verify it is writable
 if [ ! -w "$OUTPUT_DIR" ]; then
   echo -e "${RED}❌ Error: Cannot write to $OUTPUT_DIR${NC}"
   exit 1
@@ -93,7 +90,87 @@ fi
 
 echo -e "${GREEN}✅ OEBPS found: $OEBPS_DIR${NC}"
 
-# 6. Check for a3-fix.css, create if missing
+# 6. Locate the OPF file
+OPF_FILE=$(find "$OEBPS_DIR" -maxdepth 1 -name "*.opf" | head -1)
+
+if [ -z "$OPF_FILE" ]; then
+  echo -e "${RED}❌ Error: No OPF file found in OEBPS${NC}"
+  rm -rf "$TEMP_DIR"
+  exit 1
+fi
+
+echo -e "${GREEN}✅ OPF found: $(basename "$OPF_FILE")${NC}"
+
+# 7. Extract the reading order from the OPF file
+echo -e "${BLUE}📋 Reading page order from OPF...${NC}"
+
+# Debug: show what we're parsing
+echo -e "${YELLOW}   Parsing OPF: $OPF_FILE${NC}"
+
+# Extract all idrefs from spine in order (more robust pattern)
+IDREFS=$(grep -o 'idref="[^"]*"' "$OPF_FILE" | sed 's/idref="\([^"]*\)"/\1/')
+
+if [ -z "$IDREFS" ]; then
+  # Try alternative pattern (some OPFs use single quotes)
+  IDREFS=$(grep -o "idref='[^']*'" "$OPF_FILE" | sed "s/idref='\([^']*\)'/\1/")
+fi
+
+echo -e "${YELLOW}   Found $(echo "$IDREFS" | wc -w) idrefs in spine${NC}"
+
+# Build a mapping of id -> href from manifest
+# Using awk to build an associative array
+MANIFEST_MAP=$(awk '
+  /<manifest>/ { in_manifest=1 }
+  in_manifest && /<item/ {
+    match($0, /id="([^"]*)"/, id)
+    match($0, /href="([^"]*)"/, href)
+    if (id[1] && href[1]) {
+      print id[1] "|||" href[1]
+    }
+  }
+  /<\/manifest>/ { in_manifest=0 }
+' "$OPF_FILE")
+
+# Now map each idref to its href
+XHTML_FILES=""
+for idref in $IDREFS; do
+  href=$(echo "$MANIFEST_MAP" | grep "^$idref|||" | sed "s/^$idref|||//")
+  if [ -n "$href" ] && [[ "$href" == *.xhtml ]]; then
+    XHTML_FILES="$XHTML_FILES $href"
+    echo -e "  ${GREEN}✓${NC} $idref → $href"
+  fi
+done
+
+# If we couldn't extract anything, fallback to listing all XHTML files
+if [ -z "$XHTML_FILES" ]; then
+  echo -e "${YELLOW}⚠️  Could not parse OPF. Falling back to alphabetical order.${NC}"
+  cd "$OEBPS_DIR"
+  # List all XHTML files, exclude toc, nav, cover (but include cover if it exists)
+  XHTML_FILES=""
+  if [ -f "cover.xhtml" ]; then
+    XHTML_FILES="cover.xhtml"
+  fi
+  # Add all other XHTML files sorted naturally
+  for f in $(ls *.xhtml 2>/dev/null | grep -v -E "^(cover|toc|nav)\.xhtml$" | sort -V); do
+    XHTML_FILES="$XHTML_FILES $f"
+  done
+fi
+
+# Convert to array
+read -r -a XHTML_ARRAY <<< "$XHTML_FILES"
+
+XHTML_COUNT=${#XHTML_ARRAY[@]}
+
+if [ "$XHTML_COUNT" -eq 0 ]; then
+  echo -e "${RED}❌ Error: No XHTML files found${NC}"
+  rm -rf "$TEMP_DIR"
+  exit 1
+fi
+
+echo -e "${GREEN}✅ Found $XHTML_COUNT XHTML files in reading order${NC}"
+echo ""
+
+# 8. Check for a3-fix.css, create if missing
 CSS_FILE="$OEBPS_DIR/a3-fix.css"
 
 if [ ! -f "$CSS_FILE" ]; then
@@ -126,39 +203,29 @@ EOF
   echo -e "${GREEN}✅ a3-fix.css created${NC}"
 fi
 
-# 7. Change to OEBPS directory
+# 9. Change to OEBPS directory
 cd "$OEBPS_DIR" || {
   echo -e "${RED}❌ Error: Cannot enter OEBPS directory${NC}"
   rm -rf "$TEMP_DIR"
   exit 1
 }
 
-# 8. Count XHTML files
-XHTML_FILES=(cover.xhtml page*.xhtml)
-XHTML_COUNT=${#XHTML_FILES[@]}
-
-if [ "$XHTML_COUNT" -eq 0 ] || [ ! -f "${XHTML_FILES[0]}" ]; then
-  echo -e "${RED}❌ Error: No XHTML files found in OEBPS${NC}"
-  rm -rf "$TEMP_DIR"
-  exit 1
-fi
-
-echo -e "${GREEN}✅ Found $XHTML_COUNT XHTML files to process${NC}"
-echo ""
-
-# 9. Convert each XHTML to PDF
+# 10. Convert each XHTML to PDF
 echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
 echo -e "${BLUE}🔄 Converting XHTML to PDF...${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
 
 count=0
-for file in cover.xhtml page*.xhtml; do
+for file in "${XHTML_ARRAY[@]}"; do
   if [ ! -f "$file" ]; then
+    echo -e "  ${YELLOW}⚠️${NC} File not found: $file (skipping)"
     continue
   fi
 
   count=$((count + 1))
-  echo -e "${GREEN}[$count/$XHTML_COUNT]${NC} Processing: $file"
+  output_name=$(printf "page-%03d.pdf" "$count")
+
+  echo -e "${GREEN}[$count/$XHTML_COUNT]${NC} Processing: $file → $output_name"
 
   wkhtmltopdf --page-size A3 \
     --margin-top 0 \
@@ -172,10 +239,10 @@ for file in cover.xhtml page*.xhtml; do
     --allow "$OEBPS_DIR" \
     --no-stop-slow-scripts \
     --user-style-sheet a3-fix.css \
-    "$file" "${file%.xhtml}.pdf" 2>/dev/null
+    "$file" "$output_name" 2>/dev/null
 
   if [ $? -eq 0 ]; then
-    echo -e "  ${GREEN}✅${NC} ${file%.xhtml}.pdf generated"
+    echo -e "  ${GREEN}✅${NC} $output_name generated"
   else
     echo -e "  ${RED}❌${NC} Failed to convert $file"
   fi
@@ -183,7 +250,7 @@ done
 
 echo ""
 
-# 10. Move all PDFs to the output directory
+# 11. Move all PDFs to the output directory
 echo -e "${BLUE}📦 Moving PDFs to output directory...${NC}"
 
 PDF_COUNT=$(ls *.pdf 2>/dev/null | wc -l)
@@ -193,14 +260,13 @@ if [ "$PDF_COUNT" -eq 0 ]; then
   exit 1
 fi
 
-# Create a subfolder with the EPUB name in the output directory
 FINAL_OUTPUT_DIR="$OUTPUT_DIR/${EPUB_BASENAME}_pdfs"
 mkdir -p "$FINAL_OUTPUT_DIR"
 
 mv *.pdf "$FINAL_OUTPUT_DIR/" 2>/dev/null
 echo -e "${GREEN}✅ $PDF_COUNT PDFs moved to: $FINAL_OUTPUT_DIR${NC}"
 
-# 11. Clean up temporary directory
+# 12. Clean up
 echo -e "${BLUE}🧹 Cleaning up temporary files...${NC}"
 cd /tmp
 rm -rf "$TEMP_DIR"
