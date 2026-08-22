@@ -2,6 +2,30 @@
 
 This guide explains how to compile a modern **Dropbear SSH server** for the Kobo and integrate it with the existing `inetd` setup from the previous step.  
 
+> [!WARNING]
+> ## ⚠️ SSH on Modern Kobo Firmware
+>
+> Recent Kobo firmware includes a **disabled built-in OpenSSH server**, which can
+> be enabled by creating `/mnt/onboard/.kobo/ssh-enabled` and rebooting.
+>
+> **We do NOT use it.**
+>
+> The bundled OpenSSH version is **outdated** and may contain known security
+> vulnerabilities. Its configuration is also opaque, making it difficult to
+> properly audit its security and network exposure.
+>
+
+> Instead, we compile and install the **latest Dropbear**, a lightweight SSH
+> server designed for embedded systems, and integrate it with Kobo's existing
+> **`inetd`** setup.
+>
+> This gives us a **current, controlled and auditable SSH implementation**.
+>
+> > [!CAUTION]
+> > **Do not create `/mnt/onboard/.kobo/ssh-enabled`.**
+> > This enables Kobo's built-in OpenSSH, which this setup intentionally avoids.
+
+
 The result is a lightweight SSH server running directly on the Kobo, providing a more secure alternative to Telnet.
 
 ---
