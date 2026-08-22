@@ -56,16 +56,17 @@ This directory contains the resources, configuration files, and instructions for
 
     ![](./kfmon-001.png)
     
-    - **Simply allow the internal files to be written into the Kobo's existing folders.**
+    -   **Simply allow the internal files to be written into the Kobo's existing folders.**  
+    -  ⚠️ **DO NOT** uncompress `KoboRoot.tgz` files before or after copying to the device.
     
 6.  Restart the device. When you safely disconnect the USB cable, the Kobo itself will ask whether you want to install an update (the one you have just copied to its internal storage).  
-Let it update, and do not worry if you see "strange patterns" on the screen while it performs the various reboots.
+    Let it update, and do not worry if you see "strange patterns" on the screen while it performs the various reboots.
 
 
 
 ### Part 3: Install NickelMenu
 
->   NickelMenu is an extension that adds custom entries to the Kobo software's menu (Nickel). It is more resilient to firmware updates than other launchers.
+>   NickelMenu is an extension that adds custom entries to the Kobo software's menu (Nickel). 
 
 >   NickelMenu survives to firmware updates
 
@@ -81,9 +82,9 @@ Let it update, and do not worry if you see "strange patterns" on the screen whil
 
 ### Part 4: Prepare KOReader
 
-> You will not need to repeat this step when the Kobo firmware is updated, although you will need to do it whenever you want to manually update KOReader (which is recommended, as new updates are released monthly).
+>   You will not need to repeat this step when the Kobo firmware is updated, although you will need to do it whenever you want to manually update KOReader (which is recommended, as new updates are released monthly).
 
-> Its official repository also contains the [wiki](https://github.com/koreader/koreader/wiki/Installation-on-Kobo-devices), which explains how to operate KOReader.
+>   Its official repository also contains the [wiki](https://github.com/koreader/koreader/wiki/Installation-on-Kobo-devices), which explains how to operate KOReader.
 
 10. Download the latest version of KOReader for Kobo from its [official repository](https://github.com/koreader/koreader/releases).
     -   The optimal file for a Kobo Clara Colour is: `koreader-kobo-vxxx.xx.x.zip`
