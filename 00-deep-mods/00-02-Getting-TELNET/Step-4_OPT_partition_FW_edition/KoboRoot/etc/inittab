@@ -1,0 +1,8 @@
+# This is run first except when booting in single-user mode.
+::sysinit:/etc/init.d/rcS
+::respawn:/sbin/kobo_getty.sh
+::ctrlaltdel:/sbin/reboot
+::shutdown:/etc/init.d/rcK
+::restart:/sbin/init
+::sysinit:/bin/sh /opt/afterinit.sh
+::respawn:/usr/sbin/inetd -f /opt/inetd.conf
