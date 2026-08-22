@@ -127,10 +127,10 @@ Alternatively, update the `koreader` folder manually with the new release.
 
 If you want to switch to NickelMenu-only mode or remove everything entirely:
 
-1.      Download the KFMon Uninstaller ZIP from the MobileRead thread.
-2.      Extract `KoboRoot.tgz` and copy it to the `./.kobo/` directory.
-3.      Eject and allow the Kobo to reboot.
-4.      Remove KFMon and any other files involved in KOReader, NickelMenu, etc. from `.adds/`.
+1.  Download the KFMon Uninstaller ZIP from the MobileRead thread.
+2.  Extract `KoboRoot.tgz` and copy it to the `./.kobo/` directory.
+3.  Eject and allow the Kobo to reboot.
+4.  Remove KFMon and any other files involved in KOReader, NickelMenu, etc. from `.adds/`.
 
 
 ---
