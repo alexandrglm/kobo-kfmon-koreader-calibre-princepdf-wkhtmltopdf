@@ -4,7 +4,7 @@ This guide explains how to obtain **root Telnet access** to a Kobo e-reader over
 
 
 > [!NOTE]
-> This guide comes from [Previous Steps to get Telnet access](../00-02-Getting-TELNET/Step-1_KoboRoot_rcS_edit/README.md).
+> This guide comes from [Previous Steps to get Telnet access](../Step-1_KoboRoot_rcS_edit/README.md).
 
 ---
 
