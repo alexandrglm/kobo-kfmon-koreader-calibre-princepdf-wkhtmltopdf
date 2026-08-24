@@ -14,6 +14,9 @@ Fixed-layout EPUBs are a wonderful format for graphic novels and comics. They pr
 
 But not all e-readers handle them gracefully.  
 
+![The problem](./001.png)
+
+
 Some devices clip the edges. Some ignore the text layers. Some scale the content to fit the screen, only to leave it unreadably small. Some apps, even those professional ones, simply refuse to render the text at all.
 
 Not made by criticism, it is a reality of the fragmented e-book ecosystem. And it is the reason this repository exists.
