@@ -1,8 +1,7 @@
-## 📁 03-xhtml-pdf/README.md
+# XHTML → PDF Workflow
 
-# XHTML → PDF → CBZ Workflow
+Tools and stylesheets for converting fixed-layout EPUBs to PDF when PrincePDF cannot handle the rendering correctly.
 
-Scripts and stylesheets for converting fixed-layout EPUBs to PDF/CBZ when PrincePDF cannot handle the rendering correctly.
 
 ## When to Use This
 
@@ -11,7 +10,17 @@ PrincePDF does not handle these well so that text disappears or the layout break
 
 This workflow renders each XHTML page using `wkhtmltopdf`, producing a perfect visual replica of the original page.
 
-* A3 output gives room to crop later. Use `PDF Arranger` or `ImageMagick` for joining and the final trimmings.
+Different layouts, DPI, and fixes are supported:
+
+*   A4/A3/A2 page sizes
+*   96/150/300/Custom DPI
+*   Different pre-defined CSS fixes
+*   Custom CSS fixes can be applied
+
+> [!IMPORTANT]
+> Generally, it is recommended to test all options before converting a book; each publisher has its own final viewport, orientation, and resolution settings.  
+> Although the `no-optimisation` approach often gives the best result, it is advisable to compare before choosing a converting option.
+
 
 ## Prerequisites
 
@@ -28,115 +37,35 @@ sudo apt install -f
 
 ## Stylesheet fixes 
 
-- [`a3-fix.css`](./a3-fix.css)
+Various CSS fixes are included ( [check files here]](./css-fixes) ) with different settings.  
+It is also possible to link to a custom CSS file to operate under other conditions.  
 
-This forces A3 page size with zero margins, white background, while preserving a **1106×1502 px viewport**.
+## DPI Selection
 
-```css
-@page {
-  size: A3;
-  margin: 0 !important;
-}
+Now you can choose DPI: **96, 150,300 (or custom values)**.  
 
-html, body {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  background-color: #FFFFFF !important;
-}
+> [!IMPORTANT]
+> **Wrong DPI is often the cause of broken/missing text.**  
+> Increasing the final DPI of the PDF output will not improve the quality of the original illustrations; this is precisely why a test with different DPI values is included.
 
-.PageContainer {
-  background-color: #FFFFFF !important;
-  width: 1106px !important;
-  height: 1502px !important;
-  margin: 0 auto !important;
-  padding: 0 !important;
-  position: relative !important;
-}
+---
 
-img, div, p, span {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-```
+## Usage
 
-## Automated processing
+The tool offers three modes:
+
+1. **Test** – Tests all 6 approaches × 3 sizes × 3 DPIs on a single page.
+2. **Convert** – Converts the full EPUB to PDF with your chosen size, DPI, and approach.
+3. **Extract** – Simple extraction of EPUB content (XHTML, CSS, fonts, images).
 
 ```bash
 ./xhtml-pdf.sh
-
-📂 Enter the full path to the EPUB file:
-/home/test.epub
-✅ EPUB found: /home/test.epub
-
-📁 Enter the output directory for PDF files:
-/home/export/
-✅ Output directory: /home/export/
-
-⚠  This will extract the EPUB and convert all pages to PDF.
-   Temporary files will be created and cleaned up automatically.
-   Proceed? (y/N): y
-🔧 Creating temporary workspace: /tmp/xhtml2pdf-YfwaRh
-📦 Extracting EPUB...
-✅ EPUB extracted successfully
-✅ OEBPS found: /tmp/xhtml2pdf-YfwaRh/OEBPS
-⚠  print-fix.css not found. Creating default...
-✅ print-fix.css created
-✅ Found 330 XHTML files to process
-
-════════════════════════════════════════════════════════════
-🔄 Converting XHTML to PDF...
-════════════════════════════════════════════════════════════
-[1/330] Processing: cover.xhtml
-  ✅ cover.pdf generated
-[2/330] Processing: page002.xhtml
-  ✅ page002.pdf generated
-
-...
-
-
-[330/330] Processing: page330.xhtml
-  ✅ page330.pdf generated
-
-📦 Moving PDFs to output directory...
-✅ 330 PDFs moved to: /home/export/test_pdfs/
-🧹 Cleaning up temporary files...
-✅ Cleanup complete
-
-════════════════════════════════════════════════════════════
-✅ All done!
-📁 PDFs are in: /home/export/test_pdfs/
-📄 Total PDFs generated: 330
-════════════════════════════════════════════════════════════
 ```
 
-## Troubleshooting
+For a fast conversion, max. page size (A2) with default CSS fix applied conversion, a `xhtml-pdf-fast-a2.sh` is included.
 
-### "Blocked access to file" errors
+---
 
-Add `--enable-local-file-access` and `--allow /full/path/to/OEBPS/`.
-
-### Content overflows to multiple pages
-
-Use A3 (`--page-size A3`) instead of A4. The original viewport for comics tenf to be **1106×1502 px**; A3 provides enough space.
-
-### Grey background or borders
-
-Ensure `background-color: #FFFFFF !important;` is applied to `html`, `body`, and `.PageContainer`.
-
-### Headers/footers appear
-
-This version of `wkhtmltopdf` does not add headers/footers by default. If they appear, check eaxch xHTML itself.
-
-## Why Not PrincePDF?
-
-PrincePDF is a professional tool, but it struggles with EPUBs that use:
-
-*   `transform: scale()` on text containers
-*   Absolute positioning with large coordinate values
-*   Custom fonts loaded via `@font-face`
-
-The `wkhtmltopdf` approach renders the page exactly as a browser would, preserving the visual layout including text layers.
+*Updated: *2026, August, 27.*
 
 
