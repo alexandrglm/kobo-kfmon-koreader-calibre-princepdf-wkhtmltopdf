@@ -1,0 +1,23 @@
+@page {
+  size: A4;
+  margin: 0;
+}
+html, body {
+  margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+}
+.PageContainer {
+  width:100% !important;
+  height:100% !important;
+  position:relative !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+.PageContainer * {
+  position:relative !important;
+  margin:0 !important;
+  padding:0 !important;
+}

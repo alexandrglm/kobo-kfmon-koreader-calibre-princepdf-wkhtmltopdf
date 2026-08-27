@@ -1,0 +1,20 @@
+@page {
+  size: A2;
+  margin: 0;
+}
+html, body {
+  margin:0 !important;
+  padding:0 !important;
+  width:100% !important;
+  height:100% !important;
+}
+.PageContainer {
+  margin:0 !important;
+  padding:0 !important;
+  width:100% !important;
+  height:100% !important;
+}
+.PageContainer div, .PageContainer p, .PageContainer span {
+  margin:0 !important;
+  padding:0 !important;
+}
