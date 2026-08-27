@@ -232,9 +232,6 @@ rm -rf /mnt/onboard/FSCK*
 rm -rf /usr/local/Kobo/db.tgz
 chmod u+s /libexec/dbus-daemon-launch-helper
 
-# Kobo Clara Colour TELNET STEP 1 modification HERE !
-cp /etc/inittab /mnt/onboard/
-
 echo -n 8192 > /proc/sys/vm/min_free_kbytes
 echo -n 67108864 > /proc/sys/kernel/shmmax
 

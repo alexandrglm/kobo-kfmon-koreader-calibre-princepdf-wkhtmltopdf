@@ -20,13 +20,19 @@ Methods used here are adaptations and refinements of an existing work for old Ko
 | **00-02-Getting-TELNET** | A guide to enable root telnet access to your Kobo, providing a direct shell over WiFi. |
 | **00-03-Getting-SSH** | Instructions to compile and add latest Dropbear SSH server binaries  |
 | **00-04-Getting-ALPINE-chroot** | A complete walkthrough for creating and running an Alpine Linux chroot environment |
+| **00-05-SSH-over-USB** | Simple steps to obtain SSH (or Telnet, or any other service) via USB |
+
+
+> [!IMPORTANT]
+> ### For active development
+>   - Toolchain for glibc guide can be found [here](https://github.com/alexandrglm/kobo-clara-colour-toolchain-glibc2.19).
+>   - Also, a full Python 3.11.16 setup can be achieve, [here](https://github.com/alexandrglm/kobo-python3-crosscompile).
 
 ---
 
 ## Credits
 
 These guides updates the previous foundational work and scripts from the Kobo hacking community.  
-
 Special thanks to:
 
 -   **Run As Sudo - Ying Tong Li** ([https://yingtongli.me](https://github.com/RunasSudo)) for the early, comprehensive guides on gaining telnet access on the Clara HD.
