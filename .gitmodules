@@ -1,0 +1,3 @@
+[submodule "00-deep-mods"]
+	path = 00-deep-mods
+	url = https://github.com/alexandrglm/kobo-clara-colour-mods-telnet-ssh-debian-chroot
