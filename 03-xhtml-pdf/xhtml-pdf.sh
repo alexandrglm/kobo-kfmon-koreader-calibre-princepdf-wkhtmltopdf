@@ -348,20 +348,23 @@ get_xhtml_order_from_opf() {
     local opf_file="$1"
     local oebps_dir="$2"
     local temp_list="${TMPDIR:-/tmp}/xhtml-list-$$.tmp"
+    local manifest_map_file="${TMPDIR:-/tmp}/manifest-map-$$.tmp"
 
-    rm -f "$temp_list" 2>/dev/null
+    rm -f "$temp_list" "$manifest_map_file" 2>/dev/null
 
     if [ -z "$opf_file" ] || [ ! -f "$opf_file" ]; then
         echo "❌ Error: OPF file not found" >&2
         return 1
     fi
 
+    # 1) Extraer idrefs del <spine> (orden de lectura)
     idrefs=$(grep -o 'idref="[^"]*"' "$opf_file" 2>/dev/null | sed 's/idref="\([^"]*\)"/\1/')
 
     if [ -z "$idrefs" ]; then
         idrefs=$(grep -o "idref='[^']*'" "$opf_file" 2>/dev/null | sed "s/idref='\([^']*\)'/\1/")
     fi
 
+    # 2) Si no hay spine, usar todos los xhtml
     if [ -z "$idrefs" ]; then
         echo "⚠️  No idrefs found. Using all XHTML files." >&2
         cd "$oebps_dir" 2>/dev/null || return 1
@@ -374,28 +377,31 @@ get_xhtml_order_from_opf() {
 
         if [ -s "$temp_list" ]; then
             cat "$temp_list"
-            rm -f "$temp_list" 2>/dev/null
+            rm -f "$temp_list" "$manifest_map_file" 2>/dev/null
             return 0
         else
-            rm -f "$temp_list" 2>/dev/null
+            rm -f "$temp_list" "$manifest_map_file" 2>/dev/null
             return 1
         fi
     fi
 
-    manifest_map=$(awk '
-        /<manifest>/ { in_manifest=1 }
-        in_manifest && /<item/ {
-            match($0, /id="([^"]*)"/, id)
-            match($0, /href="([^"]*)"/, href)
-            if (id[1] && href[1]) {
-                print id[1] "|||" href[1]
-            }
-        }
-        /<\/manifest>/ { in_manifest=0 }
-    ' "$opf_file")
+    # 3) Construir mapa id|||href del <manifest> con herramientas portables (sin gawk)
+    #    Solo procesamos lineas entre <manifest> y </manifest>.
+    #    Extraemos cada <item .../> y sacamos id y href con sed.
+    sed -n '/<manifest>/,/<\/manifest>/p' "$opf_file" \
+        | tr '>' '>\n' \
+        | grep -E '<item ' \
+        | while IFS= read -r line; do
+            id=$(printf '%s' "$line" | sed -n 's/.*id="\([^"]*\)".*/\1/p')
+            href=$(printf '%s' "$line" | sed -n 's/.*href="\([^"]*\)".*/\1/p')
+            if [ -n "$id" ] && [ -n "$href" ]; then
+                printf '%s|||%s\n' "$id" "$href"
+            fi
+        done > "$manifest_map_file"
 
+    # 4) Recorrer los idrefs en orden y resolver a href
     for idref in $idrefs; do
-        href=$(echo "$manifest_map" | grep "^$idref|||" | sed "s/^$idref|||//")
+        href=$(grep "^${idref}|||" "$manifest_map_file" 2>/dev/null | head -1 | sed "s/^${idref}|||//")
         if [ -n "$href" ]; then
             if echo "$href" | grep -q '\.xhtml$' || echo "$href" | grep -q '\.html$'; then
                 if [ -f "$oebps_dir/$href" ]; then
@@ -405,8 +411,9 @@ get_xhtml_order_from_opf() {
         fi
     done
 
+    # 5) Fallback: si no se pudo parsear nada, usar todos los xhtml
     if [ ! -s "$temp_list" ]; then
-        echo "⚠️  Could not parse OPF. Using all XHTML files." >&2
+        echo "⚠️  Could not parse OPF manifest. Using all XHTML files." >&2
         cd "$oebps_dir" 2>/dev/null || return 1
         for f in *.xhtml; do
             if [ -f "$f" ]; then
@@ -418,10 +425,10 @@ get_xhtml_order_from_opf() {
 
     if [ -s "$temp_list" ]; then
         cat "$temp_list"
-        rm -f "$temp_list" 2>/dev/null
+        rm -f "$temp_list" "$manifest_map_file" 2>/dev/null
         return 0
     else
-        rm -f "$temp_list" 2>/dev/null
+        rm -f "$temp_list" "$manifest_map_file" 2>/dev/null
         return 1
     fi
 }
@@ -495,7 +502,11 @@ _action_test_approaches() {
 
     cd "$CURRENT_OEBPS" 2>/dev/null || return 1
 
-    XHTML_LIST=$(get_xhtml_order_from_opf "$OPF_FILE" "$CURRENT_OEBPS")
+    if ! XHTML_LIST=$(get_xhtml_order_from_opf "$OPF_FILE" "$CURRENT_OEBPS"); then
+        echo "${RED}❌ Error: Failed to get XHTML order${NC}"
+        _cleanup_temp
+        return 1
+    fi
 
     if [ -z "$XHTML_LIST" ]; then
         echo "${RED}❌ Error: No XHTML files found${NC}"
@@ -661,7 +672,11 @@ _action_test_custom_css() {
 
     cd "$CURRENT_OEBPS" 2>/dev/null || return 1
 
-    XHTML_LIST=$(get_xhtml_order_from_opf "$OPF_FILE" "$CURRENT_OEBPS")
+    if ! XHTML_LIST=$(get_xhtml_order_from_opf "$OPF_FILE" "$CURRENT_OEBPS"); then
+        echo "${RED}❌ Error: Failed to get XHTML order${NC}"
+        _cleanup_temp
+        return 1
+    fi
 
     if [ -z "$XHTML_LIST" ]; then
         echo "${RED}❌ Error: No XHTML files found${NC}"
@@ -926,7 +941,11 @@ _action_convert() {
 
         cd "$CURRENT_OEBPS" 2>/dev/null || continue
 
-        XHTML_LIST=$(get_xhtml_order_from_opf "$OPF_FILE" "$CURRENT_OEBPS")
+        if ! XHTML_LIST=$(get_xhtml_order_from_opf "$OPF_FILE" "$CURRENT_OEBPS"); then
+            echo "${RED}❌ Failed to get XHTML order${NC}"
+            _cleanup_temp
+            continue
+        fi
 
         if [ -z "$XHTML_LIST" ]; then
             echo "${RED}❌ No XHTML files found${NC}"
@@ -1449,3 +1468,4 @@ main() {
 }
 
 main "$@"
+
